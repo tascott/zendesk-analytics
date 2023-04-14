@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Zendesk API</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <h4>Get Data</h4>
+  <button id="fetch-all-data">Fetch All Data</button>
+  <button id="copy-table" type="button">Copy Table Data</button>
+  <button id="download-csv" onclick="downloadCSV()">Download CSV</button>
+
+  <p></p>
+
+  <div id="spinner" class="spinner" style="display: none;">
+    <div class="double-bounce1"></div>
+    <div class="double-bounce2"></div>
+  </div>
+
+  <table id="table">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Section 1</th>
+        <th>Section 2</th>
+        <th>Section 3</th>
+        <th>Section 4</th>
+        <th>Section 5</th>
+        <th>Section 6</th>
+        <th>Article Name</th>
+        <th>Article ID</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <div id="error-msg"></div>
+
+  <script src="./js/script.js"></script>
+
+  </body>
+</html>

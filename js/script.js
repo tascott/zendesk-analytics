@@ -1,6 +1,6 @@
 function init() {
 	var url = window.location.href;
-	if (url.indexOf('http://localhost:5501/advanced-analytics.html') !== -1) {
+	if (url.indexOf('https://tascott.co.uk/zendesk-analytics/') !== -1) {
 		if (url.indexOf('access_token=') !== -1) {
 			var access_token = readUrlParam(url, 'access_token');
 			localStorage.setItem('zauth', access_token);
@@ -51,7 +51,7 @@ function startAuthFlow() {
 		'?' +
 		'response_type=token' +
 		'&' +
-		'redirect_uri=http://localhost:5501/advanced-analytics.html' +
+		'redirect_uri=https://tascott.co.uk/zendesk-analytics/' +
 		'&' +
 		'client_id=advanced-analytics' +
 		'&' +

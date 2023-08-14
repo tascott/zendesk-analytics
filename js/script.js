@@ -1,10 +1,12 @@
+let devURL = 'http://localhost:5501/index.html'
+let prodURL = 'https://tascott.co.uk/zendesk-analytics/'
+
 function init() {
 	var url = window.location.href;
-	if (url.indexOf('https://tascott.co.uk/zendesk-analytics/') !== -1) {
+	if (url.indexOf(devURL) !== -1) {
 		if (url.indexOf('access_token=') !== -1) {
 			var access_token = readUrlParam(url, 'access_token');
 			localStorage.setItem('zauth', access_token);
-
 			window.location.hash = '';
 		}
 
@@ -16,13 +18,7 @@ function init() {
 	}
 }
 
-/*
-
-  Get all the data possible
-
-  */
-
-async function makeRequestForAll(token, endpoint) {
+async function makeRequestForAll(token, endpoint) { //Get all the data possible
 	let items = [];
 	let url = `https://encore-us.zendesk.com/api/v2/help_center/${endpoint}`;
 
@@ -48,15 +44,7 @@ async function makeRequestForAll(token, endpoint) {
 function startAuthFlow() {
 	var endpoint = 'https://encore-us.zendesk.com/oauth/authorizations/new';
 	var url_params =
-		'?' +
-		'response_type=token' +
-		'&' +
-		'redirect_uri=https://tascott.co.uk/zendesk-analytics/' +
-		'&' +
-		'client_id=advanced-analytics' +
-		'&' +
-		'scope=' +
-		encodeURIComponent('read write');
+		'?' + 'response_type=token' + '&' + 'redirect_uri=' + devURL + '&' + 'client_id=advanced-analytics' + '&' + 'scope=' + encodeURIComponent('read write');
 	window.location = endpoint + url_params;
 }
 
@@ -104,9 +92,7 @@ function createSectionMapping(sections, categories) {
 
 	sections.forEach((section) => {
 		const categoryId = section.category_id;
-
 		const category = categories.find((cat) => cat.id === categoryId);
-
 		const parentSections = getSectionAncestors(
 			sections,
 			section.parent_section_id
@@ -119,9 +105,8 @@ function createSectionMapping(sections, categories) {
 		};
 	});
 
-	// Find section with ID 4407836762771
-	const section = sections.find((sec) => sec.id === 4407836762771);
-	console.log('Section with ID 4407836762771:', section);
+	// Example: Find section with ID 4407836762771
+	// const section = sections.find((sec) => sec.id === 4407836762771);
 
 	return sectionMapping;
 }
@@ -135,10 +120,9 @@ function buildTable(articles, sectionMapping) {
 		const { category, parentSections } = sectionData;
 
 		const tableRow = document.createElement('tr');
-
-		// Add category cell
 		const categoryCell = document.createElement('td');
-		categoryCell.innerText = category.name;
+		// categoryCell.innerText = category.name;
+		categoryCell.innerText = `${category.name} (Position: ${category.position})`; // add category position
 		tableRow.appendChild(categoryCell);
 
 		// Add parent section cells
@@ -147,7 +131,8 @@ function buildTable(articles, sectionMapping) {
 		for (let i = 0; i < maxParentSections; i++) {
 			const parentSectionCell = document.createElement('td');
 			if (reversedParentSections[i]) {
-				parentSectionCell.innerText = reversedParentSections[i].name;
+				// parentSectionCell.innerText = reversedParentSections[i].name;
+				parentSectionCell.innerText = `${reversedParentSections[i].name} (Position: ${reversedParentSections[i].position})`; // add section position
 			} else {
 				parentSectionCell.innerText = '';
 			}
@@ -156,7 +141,8 @@ function buildTable(articles, sectionMapping) {
 
 		// Add article name cell
 		const articleCell = document.createElement('td');
-		articleCell.innerText = article.title;
+		// articleCell.innerText = article.title;
+		articleCell.innerText = `${article.title} (Position: ${article.position})`; // add article position
 		tableRow.appendChild(articleCell);
 
 		// Add article ID cell
@@ -186,48 +172,6 @@ function shiftSectionCells() {
 	}
 }
 
-// function buildTable(articles, sectionMapping) {
-//   const tableBody = document.getElementById('table-body');
-
-//   for (const article of articles) {
-//     const sectionId = article.section_id;
-//     const sectionData = sectionMapping[sectionId];
-//     const { category, parentSections } = sectionData;
-
-//     const tableRow = document.createElement('tr');
-
-//     // Add category cell
-//     const categoryCell = document.createElement('td');
-//     categoryCell.innerText = category.name;
-//     tableRow.appendChild(categoryCell);
-
-//     // Add parent section cells
-//     const maxParentSections = 6;
-//     const reversedParentSections = [...parentSections].reverse();
-//     for (let i = 0; i < maxParentSections; i++) {
-//       const parentSectionCell = document.createElement('td');
-//       if (reversedParentSections[i]) {
-//         parentSectionCell.innerText = reversedParentSections[i].name;
-//       } else {
-//         parentSectionCell.innerText = i === 0 ? category.name : ''; // Fill column 1 with category name if the section is empty
-//       }
-//       tableRow.appendChild(parentSectionCell);
-//     }
-
-//     // Add article name cell
-//     const articleCell = document.createElement('td');
-//     articleCell.innerText = article.title;
-//     tableRow.appendChild(articleCell);
-
-//     // Add article ID cell
-//     const articleIdCell = document.createElement('td');
-//     articleIdCell.innerText = article.id;
-//     tableRow.appendChild(articleIdCell);
-
-//     tableBody.appendChild(tableRow);
-//   }
-// }
-
 async function fetchAllDataAndCreateMapping() {
 	let access_token = localStorage.getItem('zauth');
 
@@ -238,31 +182,13 @@ async function fetchAllDataAndCreateMapping() {
 	}
 
 	try {
-		const articlesPromise = makeRequestForAll(
-			access_token,
-			'articles.json'
-		);
-		const sectionsPromise = makeRequestForAll(
-			access_token,
-			'sections.json'
-		);
-		const categoriesPromise = makeRequestForAll(
-			access_token,
-			'categories.json'
-		);
+		const articlesPromise = makeRequestForAll(access_token, 'articles.json');
+		const sectionsPromise = makeRequestForAll(access_token, 'sections.json');
+		const categoriesPromise = makeRequestForAll(access_token, 'categories.json');
 
-		const [articles, sections, categories] = await Promise.all([
-			articlesPromise,
-			sectionsPromise,
-			categoriesPromise,
-		]);
+		const [articles, sections, categories] = await Promise.all([articlesPromise, sectionsPromise, categoriesPromise,]);
 
-		const allData = {
-			articles,
-			sections,
-			categories,
-		};
-
+		const allData = {articles, sections, categories,};
 		console.log('All data fetched:', allData);
 
 		// Step 2: Create the section mapping

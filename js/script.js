@@ -112,64 +112,94 @@ function createSectionMapping(sections, categories) {
 }
 
 function buildTable(articles, sectionMapping) {
-	const tableBody = document.getElementById('table-body');
+    const tableBody = document.getElementById('table-body');
 
-	for (const article of articles) {
-		const sectionId = article.section_id;
-		const sectionData = sectionMapping[sectionId];
-		const { category, parentSections } = sectionData;
+    for (const article of articles) {
+        const sectionId = article.section_id;
+        const sectionData = sectionMapping[sectionId];
+        const { category, parentSections } = sectionData;
 
-		const tableRow = document.createElement('tr');
-		const categoryCell = document.createElement('td');
-		// categoryCell.innerText = category.name;
-		categoryCell.innerText = `${category.name} (Position: ${category.position})`; // add category position
-		tableRow.appendChild(categoryCell);
+        const tableRow = document.createElement('tr');
+		tableRow.setAttribute('data-category-name', category.name);
 
-		// Add parent section cells
-		const maxParentSections = 6;
-		const reversedParentSections = [...parentSections].reverse();
-		for (let i = 0; i < maxParentSections; i++) {
-			const parentSectionCell = document.createElement('td');
-			if (reversedParentSections[i]) {
-				// parentSectionCell.innerText = reversedParentSections[i].name;
-				parentSectionCell.innerText = `${reversedParentSections[i].name} (Position: ${reversedParentSections[i].position})`; // add section position
-			} else {
-				parentSectionCell.innerText = '';
-			}
-			tableRow.appendChild(parentSectionCell);
-		}
+        // Category cell with position and data-category attributes
+        const categoryCell = document.createElement('td');
+        categoryCell.innerText = `${category.name}`;
+        categoryCell.setAttribute('data-position', category.position);
+        categoryCell.setAttribute('data-category', category.name);  // Add the data-category attribute
+        tableRow.appendChild(categoryCell);
 
-		// Add article name cell
-		const articleCell = document.createElement('td');
-		// articleCell.innerText = article.title;
-		articleCell.innerText = `${article.title} (Position: ${article.position})`; // add article position
-		tableRow.appendChild(articleCell);
+        // Parent Section cells with position and data-section attributes
+        const maxParentSections = 6;
+        const reversedParentSections = [...parentSections].reverse();
+        for (let i = 0; i < maxParentSections; i++) {
+            const parentSectionCell = document.createElement('td');
+            if (reversedParentSections[i]) {
+                parentSectionCell.innerText = `${reversedParentSections[i].name}`;
+                parentSectionCell.setAttribute('data-position', reversedParentSections[i].position);
+                parentSectionCell.setAttribute('data-section', reversedParentSections[i].name); // Add the data-section attribute
+            } else {
+                parentSectionCell.innerText = '';
+                parentSectionCell.setAttribute('data-section', ''); // Blank section cell with data-section attribute
+            }
+            tableRow.appendChild(parentSectionCell);
+        }
 
-		// Add article ID cell
-		const articleIdCell = document.createElement('td');
-		articleIdCell.innerText = article.id;
-		tableRow.appendChild(articleIdCell);
+        // Article name cell with position and data-name attributes
+        const articleCell = document.createElement('td');
+        articleCell.innerText = `${article.title}`;
+        articleCell.setAttribute('data-position', article.position);
+        articleCell.setAttribute('data-name', article.title); // Add the data-name attribute
+        tableRow.appendChild(articleCell);
 
-		tableBody.appendChild(tableRow);
-	}
+        // Add article ID cell (no changes here)
+        const articleIdCell = document.createElement('td');
+        articleIdCell.innerText = article.id;
+		articleIdCell.setAttribute('data-id', article.id);
+        tableRow.appendChild(articleIdCell);
+
+        tableBody.appendChild(tableRow);
+    }
 }
 
+
 function shiftSectionCells() {
-	const tableBody = document.getElementById('table-body');
-	const rows = Array.from(tableBody.getElementsByTagName('tr'));
+    const tableBody = document.getElementById('table-body');
+    const rows = Array.from(tableBody.getElementsByTagName('tr'));
 
-	for (const row of rows) {
-		const sectionCells = Array.from(row.children).slice(1, 7); // Get section cells only
+    for (const row of rows) {
+        const sectionCells = Array.from(row.children).slice(1, 7); // Get section cells only
 
-		for (let i = 0; i < sectionCells.length - 1; i++) {
-			if (sectionCells[i].innerText === '') {
-				for (let j = i; j < sectionCells.length - 1; j++) {
-					sectionCells[j].innerText = sectionCells[j + 1].innerText;
-					sectionCells[j + 1].innerText = '';
-				}
-			}
-		}
-	}
+        for (let i = 0; i < sectionCells.length - 1; i++) {
+            if (sectionCells[i].innerText === '') {
+                for (let j = i; j < sectionCells.length - 1; j++) {
+                    // Shift innerText
+                    sectionCells[j].innerText = sectionCells[j + 1].innerText;
+                    sectionCells[j + 1].innerText = '';
+
+                    // Shift data-position
+                    sectionCells[j].setAttribute('data-position', sectionCells[j + 1].getAttribute('data-position') || '');
+                    sectionCells[j + 1].removeAttribute('data-position');
+
+                    // Shift data-category (only if it exists)
+                    if (sectionCells[j + 1].hasAttribute('data-category')) {
+                        sectionCells[j].setAttribute('data-category', sectionCells[j + 1].getAttribute('data-category'));
+                        sectionCells[j + 1].removeAttribute('data-category');
+                    }
+
+                    // Shift data-section
+                    sectionCells[j].setAttribute('data-section', sectionCells[j + 1].getAttribute('data-section') || '');
+                    sectionCells[j + 1].removeAttribute('data-section');
+
+                    // Shift data-name (only if it exists)
+                    if (sectionCells[j + 1].hasAttribute('data-name')) {
+                        sectionCells[j].setAttribute('data-name', sectionCells[j + 1].getAttribute('data-name'));
+                        sectionCells[j + 1].removeAttribute('data-name');
+                    }
+                }
+            }
+        }
+    }
 }
 
 async function fetchAllDataAndCreateMapping() {
@@ -252,26 +282,36 @@ function downloadCSV() {
 }
 
 function copyTableToClipboard() {
-	const table = document.querySelector('#table');
-	if (!table) {
-		console.error('Table not found');
-		return;
-	}
+    const table = document.querySelector('#table');
+    if (!table) {
+        console.error('Table not found');
+        return;
+    }
 
-	const range = document.createRange();
-	const selection = window.getSelection();
-	selection.removeAllRanges();
+    // Generate a string representation of the table
+    let tableString = '<table>';
+    const rows = table.querySelectorAll('tr');
+    for (const row of rows) {
+        tableString += '<tr>';
+        const cells = row.querySelectorAll('td');
+        for (const cell of cells) {
+            const position = cell.getAttribute('data-position');
+            tableString += `<td data-position="${position || ''}">${cell.innerText}</td>`;
+        }
+        tableString += '</tr>';
+    }
+    tableString += '</table>';
 
-	try {
-		range.selectNode(table);
-		selection.addRange(range);
-		document.execCommand('copy');
-		selection.removeAllRanges();
-
-		console.log('Table data copied to clipboard');
-	} catch (err) {
-		console.error('Failed to copy table data:', err);
-	}
+    // Use the Clipboard API to write to clipboard
+    try {
+        navigator.clipboard.writeText(tableString).then(function() {
+            console.log('Table data copied to clipboard');
+        }, function(err) {
+            console.error('Failed to copy table data:', err);
+        });
+    } catch (err) {
+        console.error('Failed to copy table data:', err);
+    }
 }
 
 // Event Listeners
@@ -285,6 +325,7 @@ document
 				await fetchAllDataAndCreateMapping();
 			buildTable(articles, sectionMapping);
 			shiftSectionCells();
+			addBorder()
 			console.log('Table built', articles, sectionMapping);
 		} catch (error) {
 			displayError('Error fetching data and building table:', error);
@@ -297,4 +338,93 @@ document
 	.getElementById('copy-table')
 	.addEventListener('click', copyTableToClipboard);
 
+document.getElementById('reorganise').addEventListener('click', reorganizeTable);
+
 window.addEventListener('load', init, false);
+
+
+
+//Stopgap function for sorting
+function reorganizeTable() {
+    const table = document.querySelector('table');
+    if (!table) {
+        console.error('Table not found');
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tr:not(:first-child)'));
+
+    const sortedRows = rows.sort((a, b) => {
+        const aCells = a.querySelectorAll('td');
+        const bCells = b.querySelectorAll('td');
+
+        // Compare first column (category)
+        const aPosition = parseInt(aCells[0].getAttribute('data-position') || "-1", 10);
+        const bPosition = parseInt(bCells[0].getAttribute('data-position') || "-1", 10);
+
+        if (aPosition !== bPosition) return aPosition - bPosition;
+
+        // If they're equal, move on to the section columns
+        for (let i = 1; i <= 6; i++) {
+            const aSectionPosition = parseInt(aCells[i].getAttribute('data-position') || "-1", 10);
+            const bSectionPosition = parseInt(bCells[i].getAttribute('data-position') || "-1", 10);
+
+            if (aSectionPosition !== bSectionPosition) return aSectionPosition - bSectionPosition;
+        }
+
+        return 0;
+    });
+
+    // Append the sorted rows back to the table (this will just rearrange their order without deleting any)
+    sortedRows.forEach(row => table.appendChild(row));
+
+	addBorder();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const checkbox = document.querySelector('.switch input[type="checkbox"]');
+
+    checkbox.addEventListener('change', function() {
+        if (this.checked) {
+            showPositionNumbers();
+        } else {
+            hidePositionNumbers();
+        }
+    });
+});
+
+function showPositionNumbers() {
+    const cells = document.querySelectorAll('[data-position]');
+    cells.forEach(cell => {
+        const position = cell.getAttribute('data-position');
+        if (position && position !== "-1") {
+            cell.textContent += ` (Position: ${position})`;
+        }
+    });
+}
+
+function hidePositionNumbers() {
+    const cells = document.querySelectorAll('[data-position]');
+    cells.forEach(cell => {
+        cell.textContent = cell.textContent.replace(/ \(Position: \d+\)/, "");
+    });
+}
+
+function addBorder() {
+	const rows = document.querySelectorAll('tr[data-category-name]');
+
+	rows.forEach(row => {
+		row.style.borderTop = "1px solid black";
+	});
+
+	let previousCategoryName = null;
+
+	rows.forEach(row => {
+		const currentCategoryName = row.getAttribute('data-category-name');
+
+		if (previousCategoryName !== currentCategoryName) {
+			row.style.borderTop = "3px solid black";
+			previousCategoryName = currentCategoryName;
+		}
+	});
+}

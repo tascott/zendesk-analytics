@@ -3,7 +3,7 @@ let prodURL = 'https://tascott.co.uk/zendesk-analytics/'
 
 function init() {
 	var url = window.location.href;
-	if (url.indexOf(devURL) !== -1) {
+	if (url.indexOf(prodURL) !== -1) {
 		if (url.indexOf('access_token=') !== -1) {
 			var access_token = readUrlParam(url, 'access_token');
 			localStorage.setItem('zauth', access_token);
@@ -44,7 +44,7 @@ async function makeRequestForAll(token, endpoint) { //Get all the data possible
 function startAuthFlow() {
 	var endpoint = 'https://encore-us.zendesk.com/oauth/authorizations/new';
 	var url_params =
-		'?' + 'response_type=token' + '&' + 'redirect_uri=' + devURL + '&' + 'client_id=advanced-analytics' + '&' + 'scope=' + encodeURIComponent('read write');
+		'?' + 'response_type=token' + '&' + 'redirect_uri=' + prodURL + '&' + 'client_id=advanced-analytics' + '&' + 'scope=' + encodeURIComponent('read write');
 	window.location = endpoint + url_params;
 }
 

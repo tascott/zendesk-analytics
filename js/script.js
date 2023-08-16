@@ -1,7 +1,7 @@
 let devURL = 'http://localhost:5501/index.html'
 let prodURL = 'https://tascott.co.uk/zendesk-analytics/'
 
-console.log('Script loaded')
+console.log('Script loaded 2')
 
 function init() {
 	var url = window.location.href;
@@ -316,6 +316,56 @@ function copyTableToClipboard() {
     }
 }
 
+//Stopgap function for sorting
+function reorganizeTable() {
+    const table = document.querySelector('table');
+    if (!table) {
+        console.error('Table not found');
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    const sortedRows = rows.sort((a, b) => {
+        const aCells = a.querySelectorAll('td');
+        const bCells = b.querySelectorAll('td');
+
+        // Compare first column (category)
+        const aPosition = parseInt(aCells[0].getAttribute('data-position') || "-1", 10);
+        const bPosition = parseInt(bCells[0].getAttribute('data-position') || "-1", 10);
+
+        if (aPosition !== bPosition) return aPosition - bPosition;
+
+        // If they're equal, move on to the section columns
+        for (let i = 1; i <= 6; i++) {
+            const aSectionPosition = parseInt(aCells[i].getAttribute('data-position') || "-1", 10);
+            const bSectionPosition = parseInt(bCells[i].getAttribute('data-position') || "-1", 10);
+
+            if (aSectionPosition !== bSectionPosition) return aSectionPosition - bSectionPosition;
+        }
+
+        return 0;
+    });
+
+    // Append the sorted rows back to the tbody
+    const tableBody = table.querySelector('tbody');
+    sortedRows.forEach(row => tableBody.appendChild(row));
+
+	addBorder();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const checkbox = document.querySelector('.switch input[type="checkbox"]');
+
+    checkbox.addEventListener('change', function() {
+        if (this.checked) {
+            showPositionNumbers();
+        } else {
+            hidePositionNumbers();
+        }
+    });
+});
+
 // Event Listeners
 document
 	.getElementById('fetch-all-data')
@@ -343,57 +393,6 @@ document
 document.getElementById('reorganise').addEventListener('click', reorganizeTable);
 
 window.addEventListener('load', init, false);
-
-
-
-//Stopgap function for sorting
-function reorganizeTable() {
-    const table = document.querySelector('table');
-    if (!table) {
-        console.error('Table not found');
-        return;
-    }
-
-    const rows = Array.from(table.querySelectorAll('tr:not(:first-child)'));
-
-    const sortedRows = rows.sort((a, b) => {
-        const aCells = a.querySelectorAll('td');
-        const bCells = b.querySelectorAll('td');
-
-        // Compare first column (category)
-        const aPosition = parseInt(aCells[0].getAttribute('data-position') || "-1", 10);
-        const bPosition = parseInt(bCells[0].getAttribute('data-position') || "-1", 10);
-
-        if (aPosition !== bPosition) return aPosition - bPosition;
-
-        // If they're equal, move on to the section columns
-        for (let i = 1; i <= 6; i++) {
-            const aSectionPosition = parseInt(aCells[i].getAttribute('data-position') || "-1", 10);
-            const bSectionPosition = parseInt(bCells[i].getAttribute('data-position') || "-1", 10);
-
-            if (aSectionPosition !== bSectionPosition) return aSectionPosition - bSectionPosition;
-        }
-
-        return 0;
-    });
-
-    // Append the sorted rows back to the table (this will just rearrange their order without deleting any)
-    sortedRows.forEach(row => table.appendChild(row));
-
-	addBorder();
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    const checkbox = document.querySelector('.switch input[type="checkbox"]');
-
-    checkbox.addEventListener('change', function() {
-        if (this.checked) {
-            showPositionNumbers();
-        } else {
-            hidePositionNumbers();
-        }
-    });
-});
 
 function showPositionNumbers() {
     const cells = document.querySelectorAll('[data-position]');

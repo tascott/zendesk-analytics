@@ -1,6 +1,8 @@
 let devURL = 'http://localhost:5501/index.html'
 let prodURL = 'https://tascott.co.uk/zendesk-analytics/'
 
+console.log('Script loaded')
+
 function init() {
 	var url = window.location.href;
 	if (url.indexOf(prodURL) !== -1) {

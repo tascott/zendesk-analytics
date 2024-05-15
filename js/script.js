@@ -1,7 +1,9 @@
 let devURL = 'http://localhost:5501/index.html'
 let prodURL = 'https://tascott.co.uk/zendesk-analytics/'
+let noApiCalls = 0;
+let userSegments = [];
 
-console.log('Script loaded 2')
+console.log('Script loaded')
 
 function init() {
 	var url = window.location.href;
@@ -25,6 +27,7 @@ async function makeRequestForAll(token, endpoint) { //Get all the data possible
 	let url = `https://encore-us.zendesk.com/api/v2/help_center/${endpoint}`;
 
 	while (url) {
+		noApiCalls++;
 		const response = await fetch(url, {
 			headers: { Authorization: `Bearer ${token}` },
 		});
@@ -41,6 +44,32 @@ async function makeRequestForAll(token, endpoint) { //Get all the data possible
 	}
 	return items;
 }
+
+async function getSegmentNames(IDlist) {
+	let url = `https://encore-us.zendesk.com/api/v2/help_center/user_segments/`;
+	let access_token = localStorage.getItem('zauth');
+	let fetchPromises = [];
+
+	IDlist.forEach(id => {
+		noApiCalls++; // Increment API call count
+		const fetchPromise = fetch(url + id,{
+			headers: {Authorization: `Bearer ${access_token}`},
+		}).then(response => {
+			if(!response.ok) {
+				throw new Error(`Error fetching user segment ${id}: ${response.status} ${response.statusText}`);
+			}
+			return response.json();
+		}).then(data => {
+			userSegments.push({user_segment_id: data.user_segment.id,name: data.user_segment.name});
+		});
+
+		fetchPromises.push(fetchPromise);
+	});
+
+	await Promise.all(fetchPromises);
+	return userSegments;
+}
+
 
 // Helper functions
 function startAuthFlow() {
@@ -124,6 +153,38 @@ function buildTable(articles, sectionMapping) {
         const tableRow = document.createElement('tr');
 		tableRow.setAttribute('data-category-name', category.name);
 
+		// New category position cell "C"
+		const categoryPositionCell = document.createElement('td');
+		categoryPositionCell.innerText = category.position;
+		categoryPositionCell.setAttribute('data-category',category.name);  // Adding data-category attribute for consistency
+		categoryPositionCell.setAttribute('data-position',category.position);
+		categoryPositionCell.setAttribute('data-showposition',false);
+		tableRow.appendChild(categoryPositionCell);
+
+		// New section position cells "S1" to "S6"
+		const maxParentSections = 6;
+		const reversedParentSections = [...parentSections].reverse();
+		for(let i = 0;i < maxParentSections;i++) {
+			const sectionPositionCell = document.createElement('td');
+			sectionPositionCell.setAttribute('data-showposition',false);
+			if(reversedParentSections[i]) {
+				sectionPositionCell.innerText = reversedParentSections[i].position;
+				sectionPositionCell.setAttribute('data-section',reversedParentSections[i].name);
+				sectionPositionCell.setAttribute('data-position',reversedParentSections[i].position);
+			} else {
+				sectionPositionCell.innerText = ''; // Blank if no section
+				sectionPositionCell.setAttribute('data-section','');
+			}
+			tableRow.appendChild(sectionPositionCell);
+		}
+
+		// New article name position cell "A"
+		const articleNamePositionCell = document.createElement('td');
+		articleNamePositionCell.innerText = article.position;
+		articleNamePositionCell.setAttribute('data-position',article.position);
+		articleNamePositionCell.setAttribute('data-showposition',false);
+		tableRow.appendChild(articleNamePositionCell);
+
         // Category cell with position and data-category attributes
         const categoryCell = document.createElement('td');
         categoryCell.innerText = `${category.name}`;
@@ -132,8 +193,6 @@ function buildTable(articles, sectionMapping) {
         tableRow.appendChild(categoryCell);
 
         // Parent Section cells with position and data-section attributes
-        const maxParentSections = 6;
-        const reversedParentSections = [...parentSections].reverse();
         for (let i = 0; i < maxParentSections; i++) {
             const parentSectionCell = document.createElement('td');
             if (reversedParentSections[i]) {
@@ -159,6 +218,17 @@ function buildTable(articles, sectionMapping) {
         articleIdCell.innerText = article.id;
 		articleIdCell.setAttribute('data-id', article.id);
         tableRow.appendChild(articleIdCell);
+
+		const userSegmentIdCell = document.createElement('td');
+		userSegmentIdCell.innerText = article.user_segment_id;
+		userSegmentIdCell.setAttribute('data-user-segment',article.user_segment_id);
+		tableRow.appendChild(userSegmentIdCell);
+
+		const userSegmentNameCell = document.createElement('td');
+		const userSegment = userSegments.find((segment) => segment.user_segment_id === article.user_segment_id);
+		userSegmentNameCell.innerText = userSegment ? userSegment.name : '';
+		userSegmentNameCell.setAttribute('data-user-segment-name',userSegment ? userSegment.name : '');
+		tableRow.appendChild(userSegmentNameCell);
 
         tableBody.appendChild(tableRow);
     }
@@ -221,7 +291,7 @@ async function fetchAllDataAndCreateMapping() {
 		const [articles, sections, categories] = await Promise.all([articlesPromise, sectionsPromise, categoriesPromise,]);
 
 		const allData = {articles, sections, categories,};
-		console.log('All data fetched:', allData);
+		// console.log('All data fetched:', allData);
 
 		// Step 2: Create the section mapping
 		const sectionMapping = createSectionMapping(sections, categories);
@@ -233,7 +303,23 @@ async function fetchAllDataAndCreateMapping() {
 			return categoryA.position - categoryB.position;
 		});
 
-		return { articles, sectionMapping }; // Add this line to return the necessary data
+		// Function to extract unique user segment ids
+		function getUniqueUserSegmentIds(articles) {
+			const uniqueIds = new Set(); // Using a set to store unique ids
+			articles.forEach(article => {
+				uniqueIds.add(article.user_segment_id);
+			});
+			return Array.from(uniqueIds); // Convert set back to array
+		}
+
+		const userSegmentIDs = getUniqueUserSegmentIds(articles);
+		// loop over the userSegmentIDs, find unique ones and make a request for each one to fetch the name
+		const userSegments = await getSegmentNames(userSegmentIDs);
+
+		// Log no of API calls
+		document.getElementById('apiCount').innerText = noApiCalls;
+
+		return { articles, sectionMapping, userSegments };
 	} catch (error) {
 		displayError(error);
 	}
@@ -330,7 +416,7 @@ function reorganizeTable() {
         const aCells = a.querySelectorAll('td');
         const bCells = b.querySelectorAll('td');
 
-        // Compare first column (category)
+        // Compare first column (C for category)
         const aPosition = parseInt(aCells[0].getAttribute('data-position') || "-1", 10);
         const bPosition = parseInt(bCells[0].getAttribute('data-position') || "-1", 10);
 
@@ -373,13 +459,15 @@ document
 		showSpinner();
 
 		try {
-			const { articles, sectionMapping } =
+			const { articles, sectionMapping, userSegments } =
 				await fetchAllDataAndCreateMapping();
 			buildTable(articles, sectionMapping);
 			shiftSectionCells();
-			addBorder()
-			console.log('Table built', articles, sectionMapping);
+			addBorder();
+			reorganizeTable();
+			console.log('Table built', articles, sectionMapping, userSegments);
 		} catch (error) {
+			console.log('Error fetching data and building table:', error);
 			displayError('Error fetching data and building table:', error);
 		} finally {
 			hideSpinner();
@@ -395,7 +483,7 @@ document.getElementById('reorganise').addEventListener('click', reorganizeTable)
 window.addEventListener('load', init, false);
 
 function showPositionNumbers() {
-    const cells = document.querySelectorAll('[data-position]');
+	const cells = document.querySelectorAll('[data-position]:not([data-showPosition="false"])');
     cells.forEach(cell => {
         const position = cell.getAttribute('data-position');
         if (position && position !== "-1") {

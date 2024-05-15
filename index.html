@@ -19,6 +19,7 @@
   <button id="copy-table" type="button">Copy Table Data</button>
   <button id="download-csv" onclick="downloadCSV()">Download CSV</button>
   <button id="reorganise">Sort table</button>
+  <h4>Number of API Calls: <span id="apiCount"></span></h4>
 
   <p></p>
 
@@ -30,6 +31,14 @@
   <table id="table">
     <thead>
       <tr>
+        <th>C</th>
+        <th>S1</th>
+        <th>S2</th>
+        <th>S3</th>
+        <th>S4</th>
+        <th>S5</th>
+        <th>S6</th>
+        <th>A</th>
         <th>Category</th>
         <th>Section 1</th>
         <th>Section 2</th>
@@ -39,6 +48,8 @@
         <th>Section 6</th>
         <th>Article Name</th>
         <th>Article ID</th>
+        <th>User Segment ID</th>
+        <th>User Segment Name</th>
       </tr>
     </thead>
     <tbody id="table-body"></tbody>

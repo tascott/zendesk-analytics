@@ -7,19 +7,30 @@
 </head>
 
 <body>
-  <h4>Get Data</h4>
-  <div class="toggle-container">
-    <label class="switch">
-      <input type="checkbox">
-      <span class="slider"></span>
-    </label>
-    <label>Toggle Position Numbers</label>
+  <div class="header">
+    <div class="api-container">
+      <h4>Get Data</h4>
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox">
+          <span class="slider"></span>
+        </label>
+        <label>Toggle Position Numbers</label>
+      </div>
+      <button id="fetch-all-data">Fetch All Data</button>
+      <button id="copy-table" type="button">Copy Table Data</button>
+      <button id="download-csv" onclick="downloadCSV()">Download CSV</button>
+      <button id="reorganise">Sort table</button>
+      <h4>Number of API Calls: <span id="apiCount"></span></h4>
+    </div>
+    <div class="api-container">
+      <h4>Upload Data</h4>
+      <input type="file" id="upload-sheet" accept=".xlsx">
+      <button id="combine">Combine Into New Table</button>
+      <button id="download-combined">Download Combined Data</button>
+    </div>
   </div>
-  <button id="fetch-all-data">Fetch All Data</button>
-  <button id="copy-table" type="button">Copy Table Data</button>
-  <button id="download-csv" onclick="downloadCSV()">Download CSV</button>
-  <button id="reorganise">Sort table</button>
-  <h4>Number of API Calls: <span id="apiCount"></span></h4>
+
 
   <p></p>
 
@@ -28,7 +39,7 @@
     <div class="double-bounce2"></div>
   </div>
 
-  <table id="table">
+  <table id="table" class="hidden">
     <thead>
       <tr>
         <th>C</th>
@@ -55,8 +66,12 @@
     <tbody id="table-body"></tbody>
   </table>
 
+  <div id="tableContainer"></div>
+
+  <div id="combinedTable"></div>
   <div id="error-msg"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
   <script src="./js/script.js"></script>
 
   </body>

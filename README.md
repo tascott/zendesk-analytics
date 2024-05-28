@@ -12,7 +12,9 @@ Run using liveserver
 (done) TODO: user segment name column
 
 ----
-TODO: page to upload and view data from a csv
+(done) TODO: page to upload and view data from a csv
+
+TODO: combine buildTable functions
 
 
 

@@ -1,13 +1,17 @@
 let devURL = 'http://localhost:5501/index.html'
 let prodURL = 'https://tascott.co.uk/zendesk-analytics/'
 let noApiCalls = 0;
+let table1APIdata;
+let table2csvData;
 let userSegments = [];
+let combinedData = [];
+let combinedTableData = [];
 
 console.log('Script loaded')
 
 function init() {
 	var url = window.location.href;
-	if (url.indexOf(prodURL) !== -1) {
+	if(url.indexOf(devURL) !== -1) {
 		if (url.indexOf('access_token=') !== -1) {
 			var access_token = readUrlParam(url, 'access_token');
 			localStorage.setItem('zauth', access_token);
@@ -70,12 +74,11 @@ async function getSegmentNames(IDlist) {
 	return userSegments;
 }
 
-
 // Helper functions
 function startAuthFlow() {
 	var endpoint = 'https://encore-us.zendesk.com/oauth/authorizations/new';
 	var url_params =
-		'?' + 'response_type=token' + '&' + 'redirect_uri=' + prodURL + '&' + 'client_id=advanced-analytics' + '&' + 'scope=' + encodeURIComponent('read write');
+		'?' + 'response_type=token' + '&' + 'redirect_uri=' + devURL + '&' + 'client_id=advanced-analytics' + '&' + 'scope=' + encodeURIComponent('read write');
 	window.location = endpoint + url_params;
 }
 
@@ -144,6 +147,7 @@ function createSectionMapping(sections, categories) {
 
 function buildTable(articles, sectionMapping) {
     const tableBody = document.getElementById('table-body');
+	document.getElementById('table').classList.remove('hidden');
 
     for (const article of articles) {
         const sectionId = article.section_id;
@@ -232,6 +236,10 @@ function buildTable(articles, sectionMapping) {
 
         tableBody.appendChild(tableRow);
     }
+
+	// Now grab the table data, convert to json, and save to table1APIdata variable
+	table1APIdata = convertTableToJson('table');
+	console.log('table1APIdata:', table1APIdata);
 }
 
 
@@ -290,7 +298,8 @@ async function fetchAllDataAndCreateMapping() {
 
 		const [articles, sections, categories] = await Promise.all([articlesPromise, sectionsPromise, categoriesPromise,]);
 
-		const allData = {articles, sections, categories,};
+		const allData = {articles, sections, categories};
+		combinedData = allData;
 		// console.log('All data fetched:', allData);
 
 		// Step 2: Create the section mapping
@@ -332,7 +341,7 @@ function showSpinner() {
 
 function hideSpinner() {
 	document.getElementById('spinner').style.display = 'none';
-	document.getElementById('table').style.display = 'table';
+	document.getElementById('table').style.display = 'block';
 }
 
 function downloadCSV() {
@@ -517,3 +526,171 @@ function addBorder() {
 		}
 	});
 }
+
+//// ----------------- Upload Excel File ----------------- ////
+
+// Upload data from other sources
+document.getElementById('upload-sheet').addEventListener('change',function(event) {
+	const file = event.target.files[0];
+	if(!file) {
+		return;
+	}
+
+	const reader = new FileReader();
+	reader.onload = function(event) {
+		const data = new Uint8Array(event.target.result);
+		const workbook = XLSX.read(data,{type: 'array'});
+
+		// Assuming the first sheet
+		const firstSheetName = workbook.SheetNames[0];
+		const worksheet = workbook.Sheets[firstSheetName];
+
+		// Convert sheet to JSON
+		const json = XLSX.utils.sheet_to_json(worksheet);
+		console.log(json)
+		renderTable(json);
+		// Save the data to a variable
+		table2csvData = json;
+		console.log('table2csvData:', table2csvData);
+	};
+	reader.readAsArrayBuffer(file);
+});
+
+// Function to extract data from the table and convert it to JSON
+function convertTableToJson(tableElement) {
+	console.log(tableElement)
+	const table = document.getElementById(tableElement); // Get the table by ID
+	const theadRow = table.querySelectorAll('thead tr th'); // Get header row to use as keys
+	const tbody = table.querySelector('tbody'); // Get the tbody element where data rows are
+	const rows = tbody.querySelectorAll('tr'); // Get all data rows
+
+	const headers = Array.from(theadRow).map(header => header.textContent); // Map headers to text
+	const data = []; // Array to store each row's data as an object
+
+	rows.forEach(row => {
+		const cells = row.querySelectorAll('td'); // Get all cells in the row
+		const rowData = {}; // Object to store row data keyed by header names
+
+		cells.forEach((cell,index) => {
+			// Using header names as keys, cell text as value
+			rowData[headers[index]] = cell.textContent;
+			// For capturing data attributes you can expand this logic
+			// Example: rowData[headers[index] + '_id'] = cell.getAttribute('data-id');
+		});
+
+		data.push(rowData); // Add the constructed row object to the data array
+	});
+
+	return data; // Return the array of row objects
+}
+
+function renderTable(data) { // TODO: Combine with/replace buildTable function
+	const container = document.getElementById('tableContainer');
+	const table = document.createElement('table');
+	table.id = 'table2';
+	table.style.width = '100%';
+	table.setAttribute('border','1');
+
+	const thead = document.createElement('thead');
+	const tbody = document.createElement('tbody');
+
+	// Adding header row
+	const headerRow = document.createElement('tr');
+	Object.keys(data[0]).forEach(key => {
+		const th = document.createElement('th');
+		th.textContent = key;
+		headerRow.appendChild(th);
+	});
+	thead.appendChild(headerRow);
+
+	// Adding data rows
+	data.forEach(row => {
+		const tr = document.createElement('tr');
+		Object.values(row).forEach(val => {
+			const td = document.createElement('td');
+			td.textContent = val || ""; // Handling undefined or null values
+			tr.appendChild(td);
+		});
+		tbody.appendChild(tr);
+	});
+
+	table.appendChild(thead);
+	table.appendChild(tbody);
+	container.innerHTML = '';
+	container.appendChild(table);
+}
+
+function mergeData(apiData,xlsData) {
+	const mergedData = []; // This will store the combined data
+
+	// Iterate over each entry in xlsData
+	xlsData.forEach(xlsEntry => {
+		// Find the corresponding entry in apiData based on 'Article ID'
+		const apiEntry = apiData.find(api => api['Article ID'] === xlsEntry['Article ID']);
+
+		// Use a placeholder if no apiData is found
+		const combinedEntry = {
+			...apiEntry, // Spread all properties from apiData entry if found
+			...xlsEntry // Spread all properties from xlsData entry
+		};
+
+		// Add the combined or standalone object to the result array
+		mergedData.push(combinedEntry);
+	});
+
+	return mergedData;
+}
+
+// Download the new table using sheetJS
+document.getElementById('combine').addEventListener('click',function() {
+	combinedTableData = mergeData(table1APIdata,table2csvData);
+	const tableContainer = document.getElementById('tableContainer');
+
+	// Remove previous tables if they exist
+	if(document.getElementById('table')) {
+		document.getElementById('table').remove();
+	}
+	if(document.getElementById('table2')) {
+		document.getElementById('table2').remove();
+	}
+
+	// Create a new table element to display the combined data
+	const table = document.createElement('table');
+	table.id = 'table3';
+	table.className = 'table'; // Add a class if you have specific styles for tables
+
+	// Use SheetJS to convert JSON data to an HTML table
+	const worksheet = XLSX.utils.json_to_sheet(combinedTableData);
+	const htmlString = XLSX.utils.sheet_to_html(worksheet,{id: 'table3',editable: false});
+
+	// Temporarily create an element to hold the HTML content
+	const tempDiv = document.createElement('div');
+	tempDiv.innerHTML = htmlString;
+
+	// Extract the table from tempDiv and append it to the tableContainer
+	const newTable = tempDiv.querySelector('table');
+	tableContainer.appendChild(newTable);
+});
+
+document.getElementById('download-combined').addEventListener('click',function() {
+	// Assume combinedTableData is a global variable containing your combined data
+	if(!combinedTableData || combinedTableData.length === 0) {
+		alert('No data available to download.');
+		return;
+	}
+
+	// Create a new workbook and worksheet with SheetJS
+	const workbook = XLSX.utils.book_new();
+	const worksheet = XLSX.utils.json_to_sheet(combinedTableData);
+
+	// Append the worksheet to the workbook
+	XLSX.utils.book_append_sheet(workbook,worksheet,'Combined Data');
+
+	// Define the file name
+	const fileName = 'CombinedDataNew.xlsx';
+
+	// Trigger the download using SheetJS
+	XLSX.writeFile(workbook,fileName);
+});
+
+

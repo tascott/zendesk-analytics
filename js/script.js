@@ -7,7 +7,7 @@ let userSegments = [];
 let combinedData = [];
 let combinedTableData = [];
 
-console.log('Script loaded')
+console.log('Script loaded 2')
 
 function init() {
 	var url = window.location.href;
@@ -623,10 +623,13 @@ function renderTable(data) { // TODO: Combine with/replace buildTable function
 function mergeData(apiData,xlsData) {
 	const mergedData = []; // This will store the combined data
 
+	const articleIdKey = xlsData[0] && ('Article ID' in xlsData[0]) ? 'Article ID' : 'Event article ID';
+
 	// Iterate over each entry in xlsData
 	xlsData.forEach(xlsEntry => {
 		// Find the corresponding entry in apiData based on 'Article ID'
-		const apiEntry = apiData.find(api => api['Article ID'] === xlsEntry['Article ID']);
+
+		const apiEntry = apiData.find(api => api['Article ID'] === xlsEntry[articleIdKey]);
 
 		// Use a placeholder if no apiData is found
 		const combinedEntry = {
@@ -641,7 +644,7 @@ function mergeData(apiData,xlsData) {
 	return mergedData;
 }
 
-// Download the new table using sheetJS
+
 document.getElementById('combine').addEventListener('click',function() {
 	combinedTableData = mergeData(table1APIdata,table2csvData);
 	const tableContainer = document.getElementById('tableContainer');

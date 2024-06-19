@@ -193,7 +193,7 @@ function buildTable(articles, sectionMapping) {
         const categoryCell = document.createElement('td');
         categoryCell.innerText = `${category.name}`;
         categoryCell.setAttribute('data-position', category.position);
-        categoryCell.setAttribute('data-category', category.name);  // Add the data-category attribute
+        categoryCell.setAttribute('data-category', category.name);
         tableRow.appendChild(categoryCell);
 
         // Parent Section cells with position and data-section attributes
@@ -202,7 +202,7 @@ function buildTable(articles, sectionMapping) {
             if (reversedParentSections[i]) {
                 parentSectionCell.innerText = `${reversedParentSections[i].name}`;
                 parentSectionCell.setAttribute('data-position', reversedParentSections[i].position);
-                parentSectionCell.setAttribute('data-section', reversedParentSections[i].name); // Add the data-section attribute
+                parentSectionCell.setAttribute('data-section', reversedParentSections[i].name);
             } else {
                 parentSectionCell.innerText = '';
                 parentSectionCell.setAttribute('data-section', ''); // Blank section cell with data-section attribute
@@ -217,7 +217,7 @@ function buildTable(articles, sectionMapping) {
         articleCell.setAttribute('data-name', article.title); // Add the data-name attribute
         tableRow.appendChild(articleCell);
 
-        // Add article ID cell (no changes here)
+        // Add article ID cell
         const articleIdCell = document.createElement('td');
         articleIdCell.innerText = article.id;
 		articleIdCell.setAttribute('data-id', article.id);
@@ -233,6 +233,18 @@ function buildTable(articles, sectionMapping) {
 		userSegmentNameCell.innerText = userSegment ? userSegment.name : '';
 		userSegmentNameCell.setAttribute('data-user-segment-name',userSegment ? userSegment.name : '');
 		tableRow.appendChild(userSegmentNameCell);
+
+		// Add edited_at cell
+		const editedAtCell = document.createElement('td');
+		editedAtCell.innerText = article.edited_at;
+		editedAtCell.setAttribute('data-edited-at', article.edited_at);
+		tableRow.appendChild(editedAtCell);
+
+		// Add updated_at cell
+		const updatedAtCell = document.createElement('td');
+		updatedAtCell.innerText = article.updated_at;
+		updatedAtCell.setAttribute('data-updated-at', article.updated_at);
+		tableRow.appendChild(updatedAtCell);
 
         tableBody.appendChild(tableRow);
     }

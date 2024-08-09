@@ -7,7 +7,7 @@ let userSegments = [];
 let combinedData = [];
 let combinedTableData = [];
 
-console.log('Script loaded 2')
+console.log('Script loaded 4')
 
 function init() {
 	var url = window.location.href;
@@ -64,7 +64,7 @@ async function getSegmentNames(IDlist) {
 			}
 			return response.json();
 		}).then(data => {
-			userSegments.push({user_segment_id: data.user_segment.id,name: data.user_segment.name});
+			userSegments.push({user_segment_id: data.user_segment.id,name: data.user_segment.name, user_segment_user_type: data.user_segment.user_type});
 		});
 
 		fetchPromises.push(fetchPromise);
@@ -246,12 +246,77 @@ function buildTable(articles, sectionMapping) {
 		updatedAtCell.setAttribute('data-updated-at', article.updated_at);
 		tableRow.appendChild(updatedAtCell);
 
-        tableBody.appendChild(tableRow);
+		// For the plural user_segment_ids field
+		const userSegmentIdsCell = document.createElement('td');
+		userSegmentIdsCell.innerText = Array.isArray(article.user_segment_ids) ? article.user_segment_ids.join(', ') : article.user_segment_ids || '';
+		tableRow.appendChild(userSegmentIdsCell);
+
+		// For the plural user_segment_ids field
+		const userSegmentNamesCell = document.createElement('td');
+		let segmentNames = '';
+		if(Array.isArray(article.user_segment_ids)) {
+			segmentNames = article.user_segment_ids.map(id => {
+				const segment = userSegments.find(s => s.user_segment_id === id);
+				return segment ? segment.name : `Unknown (${id})`;
+			}).filter(name => name !== '').join(', ');
+		} else if(article.user_segment_ids) {
+			const segment = userSegments.find(s => s.user_segment_id === article.user_segment_ids);
+			segmentNames = segment ? segment.name : `Unknown (${article.user_segment_ids})`;
+		}
+		userSegmentNamesCell.innerText = segmentNames;
+		tableRow.appendChild(userSegmentNamesCell);
+
+		//User Type for now this is a SEGMENT field
+		// const userTypeCell = document.createElement('td');
+		// userTypeCell.innerText = userSegment ? userSegment.user_segment_user_type : '';
+		// tableRow.appendChild(userTypeCell);
+
+		const userTypeCell = document.createElement('td');
+		let userTypes = [];
+		if(Array.isArray(article.user_segment_ids) && article.user_segment_ids.length > 0) {
+			userTypes = article.user_segment_ids.map(id => {
+				const segment = userSegments.find(s => s.user_segment_id === id);
+				if(segment && segment.user_segment_user_type) {
+					return `${segment.name}: ${segment.user_segment_user_type}`;
+				} else {
+					return `Unknown (${id}): N/A`;
+				}
+			});
+		} else {
+			userTypes.push('No user segments');
+		}
+		userTypeCell.innerText = userTypes.join(', ');
+		tableRow.appendChild(userTypeCell);
+
+		const authorIdCell = document.createElement('td');
+		authorIdCell.innerText = article.author_id || '';
+		tableRow.appendChild(authorIdCell);
+
+		const createdAtCell = document.createElement('td');
+		createdAtCell.innerText = article.created_at || '';
+		tableRow.appendChild(createdAtCell);
+
+		const draftCell = document.createElement('td');
+		draftCell.innerText = article.draft !== undefined ? article.draft.toString() : '';
+		tableRow.appendChild(draftCell);
+
+		const htmlUrlCell = document.createElement('td');
+		htmlUrlCell.innerText = article.html_url || '';
+		tableRow.appendChild(htmlUrlCell);
+
+		const voteCountCell = document.createElement('td');
+		voteCountCell.innerText = article.vote_count !== undefined ? article.vote_count.toString() : '';
+		tableRow.appendChild(voteCountCell);
+
+		const voteSumCell = document.createElement('td');
+		voteSumCell.innerText = article.vote_sum !== undefined ? article.vote_sum.toString() : '';
+		tableRow.appendChild(voteSumCell);
+
+		tableBody.appendChild(tableRow);
     }
 
 	// Now grab the table data, convert to json, and save to table1APIdata variable
 	table1APIdata = convertTableToJson('table');
-	console.log('table1APIdata:', table1APIdata);
 }
 
 
@@ -312,7 +377,7 @@ async function fetchAllDataAndCreateMapping() {
 
 		const allData = {articles, sections, categories};
 		combinedData = allData;
-		// console.log('All data fetched:', allData);
+		console.log('All data fetched:', allData);
 
 		// Step 2: Create the section mapping
 		const sectionMapping = createSectionMapping(sections, categories);
@@ -328,7 +393,15 @@ async function fetchAllDataAndCreateMapping() {
 		function getUniqueUserSegmentIds(articles) {
 			const uniqueIds = new Set(); // Using a set to store unique ids
 			articles.forEach(article => {
-				uniqueIds.add(article.user_segment_id);
+				if(Array.isArray(article.user_segment_ids) && article.user_segment_ids.length > 0) {
+					article.user_segment_ids.forEach(id => {
+						if(id != null) {
+							uniqueIds.add(id);
+						}
+					});
+				} else {
+					console.log('No user segment IDs found for article ID:',article.id,article);
+				}
 			});
 			return Array.from(uniqueIds); // Convert set back to array
 		}
@@ -486,7 +559,6 @@ document
 			shiftSectionCells();
 			addBorder();
 			reorganizeTable();
-			console.log('Table built', articles, sectionMapping, userSegments);
 		} catch (error) {
 			console.log('Error fetching data and building table:', error);
 			displayError('Error fetching data and building table:', error);
@@ -559,18 +631,15 @@ document.getElementById('upload-sheet').addEventListener('change',function(event
 
 		// Convert sheet to JSON
 		const json = XLSX.utils.sheet_to_json(worksheet);
-		console.log(json)
 		renderTable(json);
 		// Save the data to a variable
 		table2csvData = json;
-		console.log('table2csvData:', table2csvData);
 	};
 	reader.readAsArrayBuffer(file);
 });
 
 // Function to extract data from the table and convert it to JSON
 function convertTableToJson(tableElement) {
-	console.log(tableElement)
 	const table = document.getElementById(tableElement); // Get the table by ID
 	const theadRow = table.querySelectorAll('thead tr th'); // Get header row to use as keys
 	const tbody = table.querySelector('tbody'); // Get the tbody element where data rows are

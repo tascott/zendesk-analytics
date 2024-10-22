@@ -438,8 +438,12 @@ function downloadXLSX() {
 
 	// Iterate over all cells in the worksheet
 	for(const cell in worksheet) {
+		if(cell.startsWith('!')) continue;  // Skip special keys that start with '!', needed for sheetJS apparently
 		if(worksheet[cell].t === 'n') { // Check if the cell type is numeric
-			worksheet[cell].z = '0'; // Set number format to display as plain number without formatting
+			// Apply plain number format only if the content is purely numeric, i.e. IDs
+			if(/^\d+$/.test(worksheet[cell].v)) {
+				worksheet[cell].z = '0';
+			}
 		}
 	}
 
@@ -464,6 +468,7 @@ function downloadXLSX() {
 
 	document.body.removeChild(link);
 }
+
 
 
 function copyTableToClipboard() {

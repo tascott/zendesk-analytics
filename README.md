@@ -10,11 +10,9 @@ Run using liveserver
 (done) TODO: sort sorting function with new columns
 (done) TODO: no. of Api calls made
 (done) TODO: user segment name column
-
-----
 (done) TODO: page to upload and view data from a csv
+(done) TODO: add download xlsx in addition to csv button - or just swap
 
-TODO: combine buildTable functions
-
-
-
+TODO: combine buildTable functions (future)
+TODO: re-do app so we're not printing to and downloading from tables, i.e. manipulate the data in the app
+TODO: each month in the data needs to have every article, even if it has 0 views

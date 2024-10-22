@@ -120,7 +120,6 @@ function getSectionAncestors(sections, sectionId, level = 1) {
 	}
 }
 
-// Modified createSectionMapping function
 function createSectionMapping(sections, categories) {
 	const sectionMapping = {};
 
@@ -429,32 +428,23 @@ function hideSpinner() {
 	document.getElementById('table').style.display = 'block';
 }
 
-function downloadCSV() {
+function downloadXLSX() {
 	const table = document.getElementById('table');
-	const headerRows = Array.from(
-		table.getElementsByTagName('thead')[0].getElementsByTagName('tr')
-	);
-	const bodyRows = Array.from(
-		table.getElementsByTagName('tbody')[0].getElementsByTagName('tr')
-	);
-	const allRows = headerRows.concat(bodyRows);
+	const workbook = XLSX.utils.table_to_book(table);
+	const xlsxBlob = XLSX.write(workbook,{bookType: 'xlsx',type: 'binary'});
 
-	const csvContent = allRows
-		.map((row) => {
-			const headerCells = Array.from(row.getElementsByTagName('th'));
-			const bodyCells = Array.from(row.getElementsByTagName('td'));
-			const allCells = headerCells.concat(bodyCells);
-			return allCells
-				.map((cell) => `"${cell.innerText.replace(/"/g, '""')}"`)
-				.join(',');
-		})
-		.join('\r\n');
+	function s2ab(s) {
+		const buf = new ArrayBuffer(s.length);
+		const view = new Uint8Array(buf);
+		for(let i = 0;i < s.length;i++) view[i] = s.charCodeAt(i) & 0xFF;
+		return buf;
+	}
 
-	const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+	const blob = new Blob([s2ab(xlsxBlob)],{type: 'application/octet-stream'});
 	const link = document.createElement('a');
-	const url = URL.createObjectURL(csvBlob);
-	link.setAttribute('href', url);
-	link.setAttribute('download', 'table_data.csv');
+	const url = URL.createObjectURL(blob);
+	link.setAttribute('href',url);
+	link.setAttribute('download','table_data.xlsx');
 	link.style.display = 'none';
 	document.body.appendChild(link);
 

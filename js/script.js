@@ -431,6 +431,18 @@ function hideSpinner() {
 function downloadXLSX() {
 	const table = document.getElementById('table');
 	const workbook = XLSX.utils.table_to_book(table);
+
+	// Accessing the first worksheet in the workbook
+	const firstSheetName = workbook.SheetNames[0];
+	const worksheet = workbook.Sheets[firstSheetName];
+
+	// Iterate over all cells in the worksheet
+	for(const cell in worksheet) {
+		if(worksheet[cell].t === 'n') { // Check if the cell type is numeric
+			worksheet[cell].z = '0'; // Set number format to display as plain number without formatting
+		}
+	}
+
 	const xlsxBlob = XLSX.write(workbook,{bookType: 'xlsx',type: 'binary'});
 
 	function s2ab(s) {
@@ -452,6 +464,7 @@ function downloadXLSX() {
 
 	document.body.removeChild(link);
 }
+
 
 function copyTableToClipboard() {
     const table = document.querySelector('#table');
